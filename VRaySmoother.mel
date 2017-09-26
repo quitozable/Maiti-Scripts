@@ -1,0 +1,44 @@
+//created by Boske ================================
+//Edited by Luchozable :) =========================
+
+if (`window -exists vray_opensubdiv`) deleteUI -window vray_opensubdiv;
+setParent();
+window -title "Smoother!" -bgc 0.49 0.51 0.5 -wh 250 500 -s 1 vray_opensubdiv;
+formLayout  ();
+columnLayout -columnWidth 100  -columnOffset "left" 5  c1;
+text   -rs 1 -h 50  -fn  "smallBoldLabelFont"  "  assign opensubdiv and ID in selected object .." ;
+setParent();
+rowColumnLayout -numberOfColumns 2 -columnWidth 1 100 -columnWidth 2 120  c2;
+text  "Smooth Lvl";
+string $voice =`intField -v 3 -min 0 -width 30`;
+text  "Object ID";
+string $ObjID =`intField -v 0 -min 0 -width 30`;
+button -l "Smooth that Nigga"  -align "right" -w 200 -c ("VrayAupply($voice,$ObjID)")  b1;
+showWindow vray_opensubdiv;
+
+
+global proc VrayAupply(string $SmoothLvl, string $GetID){
+    int $SLvl = `intField -q -v $SmoothLvl`;
+    int $SID = `intField -q -v $GetID`;
+string $object[] =`ls -sl`;
+if (size($object)<=0){
+    error "No objects selected m8";
+    }
+//string $shp[] = `listRelatives -f`;
+$incr=0;
+//$incr is for incriment variable cause string cannot be a incremental
+for($each in $object){
+    select $each;
+    string $shp[] = `listRelatives -f`;
+    vray addAttributesFromGroup ($shp[0]) vray_opensubdiv 1;
+    //
+    vray addAttributesFromGroup ($shp[0]) vray_objectID 1;
+    setUITemplate -pst attributeEditorTemplate;
+    setAttr ($each+".vrayOsdSubdivDepth") $SLvl;
+    setAttr ($each+".vrayObjectID") $SID;
+    $incr++;
+};
+
+};
+
+//==========================end of script====================//;

@@ -1,0 +1,109 @@
+//=== Settings DDM v.0.4 ===
+//=== by Luchozab :v     ===
+if (`window -exists ddmer`) deleteUI -window ddmer;
+setParent();
+window -title "DDMer Scene Settings!" -bgc 0.49 0.51 0.5 -wh 250 300 -s 1 ddmer;
+formLayout  ();
+columnLayout -columnWidth 100  -columnOffset "left" 5  c1;
+text   -rs 1 -h 50  -fn  "smallBoldLabelFont"  "  Basic Settings 4 all DDM Scenes ;) ..." ;
+setParent();
+rowColumnLayout -numberOfColumns 2 -columnWidth 1 100 -columnWidth 2 120  c2;
+text  "Shot Frames";
+string $voice =`intField -v 40 -min 0 -width 30`;
+string $Shad = `checkBox -label "Shadow Pass" -v false`;
+string $Vels = `checkBox -label "Velocity Pass" -v false`;
+button -l "SET IT"  -align "right" -w 200 -c ("settingDDM($voice,$Vels,$Shad)")  b1;
+text  "";
+button -l "CreateShading Mat"  -align "right" -w 200 -c ("JustShading()")  b2;
+showWindow ddmer;
+
+global proc JustShading () {
+	shadingNode -asShader VRayMtl -n "Shading";
+    setAttr "Shading.color" -type double3 1 1 1 ;
+    setAttr "Shading.roughnessAmount" 1;
+}
+global proc settingDDM (string $frames, string $V, string $S){
+    loadPlugin -qt AbcExport ;
+    //Activate VRay
+    loadPlugin -qt vrayformaya ;
+    int $VelC =`checkBox -q -v $V`;
+    int $ShaC =`checkBox -q -v $S`;
+    int $mframe = `intField -q -v $frames`;
+    setCurrentRenderer vray;
+    
+    setAttr "defaultRenderGlobals.animation" 1;
+	setAttr "vraySettings.giOn" 0;
+    //setAttr "vraySettings.animType" 1;
+    setAttr "vraySettings.animBatchOnly" 1;
+    setAttr "defaultRenderGlobals.endFrame" $mframe;
+    setAttr "vraySettings.width" 2048;
+    setAttr "vraySettings.height" 870;
+    setAttr "vraySettings.samplerType" 2;
+    //setAttr "vraySettings.imageFormatStr" -type "string" "tif";
+    setAttr "vraySettings.imageFormatStr" -type "string" "exr (multichannel)";
+    //setAttr "vraySettings.imgOpt_tiff_bitsPerChannel" 32;
+    setAttr "vraySettings.cmap_adaptationOnly" 2;
+    setAttr "vraySettings.cmap_linearworkflow" 1;
+    setAttr "vraySettings.cmap_affectSwatches" 1;
+    
+    
+    if (`objExists Flat`==0){
+        
+        if ($VelC==1){
+            setAttr "vraySettings.imgOpt_exr_bitsPerChannel" 32;
+            //setAttr "vraySettings.imageFormatStr" -type "string" "exr (multichannel)";
+            vrayAddRenderElement velocityChannel;
+        }
+        
+        vrayAddRenderElement MultiMatteElement;
+        setAttr "vrayRE_Multi_Matte.vray_redid_multimatte" 1;
+        setAttr "vrayRE_Multi_Matte.vray_greenid_multimatte" 2;
+        setAttr "vrayRE_Multi_Matte.vray_blueid_multimatte" 3;
+        
+        
+        
+        shadingNode -asShader VRayMtl -n "Shading";
+        setAttr "Shading.color" -type double3 1 1 1 ;
+        setAttr "Shading.roughnessAmount" 1;
+        
+        shadingNode -asShader VRayMtlWrapper -n "tempWrap";
+    	sets -renderable true -noSurfaceShader true -empty -name "tempWrSG";
+    	connectAttr -f tempWrap.outColor tempWrSG.surfaceShader;
+    	rename tempWrap ShadowsWr;
+    	rename tempWrSG ShadowsWrSG;
+    	connectAttr -f lambert1.outColor ShadowsWr.baseMaterial;
+    	setAttr "ShadowsWr.matteSurface" 1;
+    	setAttr "ShadowsWr.shadows" 1;
+    	setAttr "ShadowsWr.shadowTintColor" -type double3 1 1 1 ;
+	
+        select -all;
+        createRenderLayer -name ("Flat") -number 1 -noRecurse  `ls -selection`;
+        directionalLight -n "MainLight";
+        select -r MainLight ;
+        scale -ws -r 30 30 30 ;
+        setAttr "MainLightShape.intensity" 7;
+        select -all;
+        createRenderLayer -name ("Lightin") -number 1 -noRecurse  `ls -selection`;
+        
+        editRenderLayerGlobals -currentRenderLayer Lightin ;
+        editRenderLayerAdjustment "vraySettings.relements_enableall";
+        setAttr "vraySettings.relements_enableall" 0;
+        editRenderLayerAdjustment "vraySettings.imgOpt_exr_bitsPerChannel";
+        setAttr "vraySettings.imgOpt_exr_bitsPerChannel" 16;
+        //editRenderLayerAdjustment "vraySettings.imageFormatStr";
+        //setAttr "vraySettings.imageFormatStr" -type "string" "tif";
+        
+    }
+    if (`objExists Shadows`==0){
+        if ($ShaC == 1){
+            select -all;
+            createRenderLayer -name ("Shadow") -number 1 -noRecurse  `ls -selection`;
+            
+            editRenderLayerGlobals -currentRenderLayer Shadow ;
+            editRenderLayerAdjustment "vraySettings.relements_enableall";
+            setAttr "vraySettings.relements_enableall" 0;
+            editRenderLayerAdjustment "vraySettings.imgOpt_exr_bitsPerChannel";
+            setAttr "vraySettings.imgOpt_exr_bitsPerChannel" 16;
+        }
+    }
+}

@@ -1,0 +1,199 @@
+//=========================================================
+//========  Juan Futbol Master Script V0.0.3a  ============
+//========  by Luchozable  ================================
+//=========================================================
+
+if (`window -exists JFBMS1`) deleteUI -window JFBMS1;
+setParent();
+window -title "Juan Lighting Help!" -bgc 0.49 0.51 0.5 -wh 250 300 -s 1 JFBMS1;
+formLayout  ();
+columnLayout -columnWidth 250  -columnOffset "left" 5  c1;
+text   -rs 1 -h 125  -fn  "smallBoldLabelFont"  "      _ _____ ____         __       \n        | |  ___| __ )     _   \\ \\      \n      _    | | |_  |   _  \\   (_)  | | |      \n | |_| |  _| | |_) |   _    | |     \n  \\___/|_| |____/   (_) | |     \n                                       /_/      \n  ____   ____ ____  ___ ____ _____ ";
+
+button -l "?" -bgc 0.610 0.862 0.998 -align "right" -w 15 -c ("HelpWindowJFB()")  b17;
+text -rs 1 -h 30 "    === Varius Variables ===";
+rowColumnLayout -numberOfColumns 2 -columnWidth 1 100 -columnWidth 2 100 c2;
+//text  " Shot Frames:  ";
+button -l "Shot Frames:"  -align "right" -w 100 -c ("ShotFrames($frames)")  b20;
+string $frames =`intField -v 40 -min 0 -width 30`;
+button -l "Max R. Time:"  -align "right" -w 100 -c ("RendTime($Rtime)")  b21;
+string $Rtime =`intField -v 7 -min 0 -width 30`;
+float $rgb2[] = {0.775, 0.8875, 1};// -at "vraySettings.cam_envtexGi";
+text  "     Shadows Layer?: ";string $Shad = `checkBox  -label "" -v false`;
+setParent..;
+
+
+text -rs 1 -h 30 "    === Some Sets Selector ===";
+button -l "All Base Settings"  -align "right" -w 150 -c ("AllBSettings($frames,$Rtime,$rgb2,$Shad)")  b1;
+button -l "Load Alembic Plugin"  -align "right" -w 150 -c ("LoadABCs()")  b2;
+button -l "Load Vray Plugin"  -align "right" -w 150 -c ("LoadVray()")  b3;
+button -l "Color Enviroment Change"  -align "right" -w 150 -c ("$rgb2=ColorEnvSelect()")  b4;
+button -l "Shadows Material"  -align "right" -w 150 -c ("CreateShadowWrpMat()")  b5;
+button -l "Non visible Color Inf" -en 0 -align "right" -w 150 -c ("CreateBaseClrInfluencer()")  b6;
+button -l "Create Shadow Layer"  -align "right" -w 150 -c ("CreateShadowLayer()")  b7;
+/*button -l "Lips"  -align "right" -w 150 -c ("func()")  b8;
+button -l "Teeth"  -align "right" -w 150 -c ("func()")  b9;
+button -l "Tongue"  -align "right" -w 150 -c ("func()")  b10;
+button -l "Torzo"  -align "right" -w 150 -c ("func()")  b11;
+button -l "Left Leg"  -align "right" -w 150 -c ("func()")  b12;
+button -l "Left Arm"  -align "right" -w 150 -c ("func()")  b13;
+button -l "Left Fingers"  -align "right" -w 150 -c ("func()")  b14;
+button -l "Right Leg"  -align "right" -w 150 -c ("func()")  b15;
+button -l "Right Arm"  -align "right" -w 150 -c ("func()")  b16;
+*/
+
+showWindow JFBMS1;
+
+global proc HelpWindowJFB(){
+if (`window -exists HELPJFBMS2`) deleteUI -window HELPJFBMS2;
+
+window -title "Help Window :D!" -bgc 0.49 0.51 0.5 -wh 250 300 -s 1 HELPJFBMS2;
+formLayout  ();
+text   -rs 1 -h 125  -fn  "smallBoldLabelFont"  " === INTRO E INFO DEL "MASTER" SCRIPT DE JFB ===  \n - All Base Settings: Coloca todo lo básico que debe tener\n   la escena con los settings especificados arriba. Porque maya\n   no detecta siempre los settings de vray, funciona abrir render\n   settings y despues aplastar este boton, tambien aplastarlo una\n   segunda vez por la misma razón porque a veces no crea las render\n   layers en la escena.\n";
+setParent..;
+setParent..;
+    showWindow HELPJFBMS2;
+}
+global proc AllBSettings(string $frames, string $Rtime, float $rgb[], string $Shad){
+    setCurrentRenderer vray;
+    setAttr "vraySettings.animType" 1;
+    setAttr "vraySettings.animBatchOnly" 1;
+    int $mframe = `intField -q -v $frames`;
+    setAttr "defaultRenderGlobals.endFrame" $mframe;
+    setAttr "vraySettings.imageFormatStr" -type "string" "tga";
+    setAttr "vraySettings.width" 1920;
+    setAttr "vraySettings.height" 1080;
+    //setAttr -type "string" "defaultRenderGlobals.imageFilePrefix" "hey";
+    //GI
+    setAttr "vraySettings.giOn" 1;
+    setAttr "vraySettings.secondaryEngine" 2;
+    
+    //Light Directional
+     if (`objExists MainLight`==0){
+    directionalLight -n "MainLight";
+        select -r MainLight ;
+        scale -ws -r 30 30 30 ;
+        setAttr "MainLightShape.intensity" 1.5;
+        }
+    //VRAYSETS
+    setAttr "vraySettings.samplerType" 3;
+    int $rrtim = `intField -q -v $Rtime`;
+    setAttr "vraySettings.progressiveMaxTime" $rrtim;
+    setAttr "vraySettings.cam_overrideEnvtex" 1;
+    setAttr "vraySettings.cam_envtexGi" -type double3 $rgb[0] $rgb[1] $rgb[2] ;
+    setAttr "vraySettings.cmap_adaptationOnly" 0;
+    setAttr "vraySettings.cmap_linearworkflow" 1;
+    setAttr "vraySettings.cmap_affectSwatches" 1;
+    
+    //Create Passesessss
+    if (`objExists AmientOclussionMat`==0){
+        vrayAddRenderElement MultiMatteElement;
+        setAttr "vrayRE_Multi_Matte.vray_redid_multimatte" 1;
+        setAttr "vrayRE_Multi_Matte.vray_greenid_multimatte" 2;
+        setAttr "vrayRE_Multi_Matte.vray_blueid_multimatte" 3;
+        
+        vrayAddRenderElement FastSSS2Channel;
+    
+    
+        vrayAddRenderElement ExtraTexElement;
+        defaultNavigation -createNew -destination "vrayRE_Extra_Tex.vray_texture_extratex";
+        createRenderNode -allWithTexturesUp "defaultNavigation -force true -connectToExisting -source %node -destination vrayRE_Extra_Tex.vray_texture_extratex" "";
+        defaultNavigation -defaultTraversal -destination "vrayRE_Extra_Tex.vray_texture_extratex";
+        shadingNode -asTexture VRayDirt -n AmientOclussionMat;
+        setAttr "AmientOclussionMat.radius" 20;
+        shadingNode -asUtility place2dTexture -n AmientOclussionMat2d;
+        connectAttr AmientOclussionMat2d.outUV AmientOclussionMat.uv;
+        connectAttr AmientOclussionMat2d.outUvFilterSize AmientOclussionMat.uvFilterSize;
+        defaultNavigation -force true -connectToExisting -source AmientOclussionMat -destination vrayRE_Extra_Tex.vray_texture_extratex; window -e -vis false createRenderNodeWindow;
+        connectAttr -force AmientOclussionMat.outColor vrayRE_Extra_Tex.vray_texture_extratex;
+        setAttr "AmientOclussionMat.radius" 20;
+        setAttr "AmientOclussionMat.radius" 20;
+    }
+    if (`objExists Flat`==0){
+    select -all;
+    createRenderLayer -name ("Flat") -number 1 -noRecurse  `ls -selection`;
+    select -cl;}
+    int $Check =`checkBox -q -v $Shad`;
+    if ($Check==1){
+        CreateShadowLayer();
+    }
+    editRenderLayerGlobals -currentRenderLayer Flat ;
+    
+}
+global proc LoadABCs(){
+    loadPlugin AbcExport;
+}
+global proc LoadVray(){
+    loadPlugin -qt vrayformaya ;
+    setCurrentRenderer vray;
+}
+global proc float[] ColorEnvSelect(){
+    colorEditor;
+		
+		// query the result
+		if (`colorEditor -query -result`) {
+			float $rgb[], $alpha;
+			
+			// get RGB
+			$rgb = `colorEditor -query -rgb`;
+			
+            setAttr "vraySettings.cam_envtexGi" -type double3 $rgb[0] $rgb[1] $rgb[2] ;
+			return $rgb;
+	 
+		} else {
+			print("Editor was dismissed\n");
+			
+		}
+		setAttr "vraySettings.cam_envtexGi" -type double3  0.775 0.8875 1 ;
+		return{0,0,0};
+}
+global proc ShotFrames(string $frames){
+     int $mframe = `intField -q -v $frames`;
+    setAttr "defaultRenderGlobals.endFrame" $mframe;
+}
+global proc RendTime(string $frames){
+    int $mframe = `intField -q -v $frames`;
+    setAttr "vraySettings.progressiveMaxTime" $mframe;
+}
+global proc CreateShadowWrpMat(){
+    if (`objExists ShadowsWr`==0){
+        shadingNode -asShader VRayMtlWrapper -n "tempWrap";
+    	sets -renderable true -noSurfaceShader true -empty -name "tempWrSG";
+    	connectAttr -f tempWrap.outColor tempWrSG.surfaceShader;
+    	rename tempWrap ShadowsWr;
+    	rename tempWrSG ShadowsWrSG;
+    	connectAttr -f lambert1.outColor ShadowsWr.baseMaterial;
+    	setAttr "ShadowsWr.matteSurface" 1;
+    	setAttr "ShadowsWr.shadows" 1;
+    	setAttr "ShadowsWr.shadowTintColor" -type double3 1 1 1 ;
+    }
+    else {warning "Shadows Wrapper already exists!";}
+}
+global proc CreateBaseClrInfluencer(){
+        shadingNode -asShader VRayMtlWrapper -n "tempWrap";
+        shadingNode -asShader VRayMtl -n ColorInBase;
+        sets -renderable true -noSurfaceShader true -empty -name ColorInBaseSG;
+        connectAttr -f ColorInBase.outColor ColorInBaseSG.surfaceShader;
+    	sets -renderable true -noSurfaceShader true -empty -name "tempWrSG";
+    	connectAttr -f tempWrap.outColor tempWrSG.surfaceShader;
+    	setAttr "ColorInBase.color" -type double3 0.261159 0.789 0.261159 ;
+    	rename tempWrap ColorInWr;
+    	rename tempWrSG ColorInWrSG;
+    	connectAttr -f ColorInBase.outColor ColorInWr.baseMaterial;
+    	setAttr "ColorInWr.matteSurface" 1;
+}
+global proc CreateShadowLayer(){
+    if (`objExists Shadows`==0){
+        select -all;
+        createRenderLayer -name ("Shadows") -number 1 -noRecurse  `ls -selection`;
+        editRenderLayerGlobals -currentRenderLayer Shadows ;
+        editRenderLayerAdjustment "vraySettings.giOn";
+        setAttr "vraySettings.giOn" 0;
+        editRenderLayerAdjustment "vraySettings.relements_enableall";
+        setAttr "vraySettings.relements_enableall" 0;
+        editRenderLayerAdjustment "vraySettings.samplerType";
+        setAttr "vraySettings.samplerType" 2;
+    }
+    else {warning "There is a Shadows Render Layer already!";}
+}
+//
