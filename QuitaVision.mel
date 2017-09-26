@@ -1,0 +1,28 @@
+global proc This(){
+string $sel[]=`ls -sl `;
+string $a;
+    for ($a in $sel){
+        //setAttr ($a+".vrayOsdSubdivDepth") 2;
+        //setAttr ($a+".vrayObjectID") 1;
+		if (`attributeExists "primaryVisibility" $a`) {        
+			editRenderLayerAdjustment ($a+".primaryVisibility");			
+			setAttr ($a+".primaryVisibility") 0;	
+}
+		else {
+			editRenderLayerAdjustment ($a+"Shape.primaryVisibility");
+            setAttr ($a+"Shape.primaryVisibility") 0;
+        }
+/*
+        editRenderLayerAdjustment ($a+".primaryVisibility");
+        if (`match $a "Shape"`!=""){
+            setAttr ($a+"Shape.primaryVisibility") 0;
+        }
+        else {
+			if (`match $a "1"`!=""){
+            setAttr ($a+"Shape1.primaryVisibility") 0;
+        }
+            setAttr ($a+".primaryVisibility") 0;
+        }*/
+    }
+}
+This();
